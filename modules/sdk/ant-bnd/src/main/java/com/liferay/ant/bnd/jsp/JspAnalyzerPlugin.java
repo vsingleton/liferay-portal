@@ -350,9 +350,15 @@ public class JspAnalyzerPlugin implements AnalyzerPlugin {
 	}
 
 	private static final String[] _JSTL_CORE_URIS = new String[] {
-		"http://java.sun.com/jsp/jstl/core", "http://java.sun.com/jsp/jstl/fmt",
+		"http://java.sun.com/jsp/jstl/core",
+		"http://java.sun.com/jsp/jstl/core_rt",
+		"http://java.sun.com/jsp/jstl/fmt",
+		"http://java.sun.com/jsp/jstl/fmt_rt",
 		"http://java.sun.com/jsp/jstl/functions",
-		"http://java.sun.com/jsp/jstl/sql", "http://java.sun.com/jsp/jstl/xml"
+		"http://java.sun.com/jsp/jstl/sql",
+		"http://java.sun.com/jsp/jstl/sql_rt",
+		"http://java.sun.com/jsp/jstl/xml",
+		"http://java.sun.com/jsp/jstl/xml_rt"
 	};
 
 	private static final String[] _REQUIRED_PACKAGE_NAMES = new String[] {
