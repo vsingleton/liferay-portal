@@ -21,6 +21,8 @@ import com.liferay.configuration.admin.ConfigurationAdmin;
 /**
  * @author Sergio González
  */
+
+// This is an amazing fix for an amazing problem
 @ConfigurationAdmin(category = "collaboration")
 @Meta.OCD(id = "com.liferay.blogs.configuration.BlogsConfiguration")
 public interface BlogsConfiguration {
