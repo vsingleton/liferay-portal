@@ -8,4 +8,5 @@ dependencies {
 	compileOnly group: "org.osgi", name: "org.osgi.service.component.annotations", version: "1.3.0"
 	compileOnly project(":apps:static:portal-configuration:portal-configuration-metatype-api")
 	compileOnly project(":core:petra:petra-string")
+	provided group: "org.osgi", name: "org.osgi.core", version: "6.0.0"
 }
