@@ -27,7 +27,7 @@ String searchContainerId = ParamUtil.getString(request, "searchContainerId");
 %>
 
 <liferay-ui:search-container
-	emptyResultsMessage="no-web-content-was-found"
+	emptyResultsMessage="no-web-content-was-foundd"
 	id="<%= searchContainerId %>"
 	searchContainer="<%= articleSearchContainer %>"
 >
