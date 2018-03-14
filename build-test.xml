@@ -5699,10 +5699,9 @@ go]]></replacevalue>
 				>
 					<include name="**/TEST-*.xml" />
 				</fileset>
-				<fileset
-					dir="util-taglib/test-results"
-					erroronmissingdir="false"
-				>
+				<fileset dir="util-taglib/test-results" erroronmissingdir="false">
+					<include name="**/TEST-*.xml" />
+				</fileset>
 				<fileset dir="tck/test-results" erroronmissingdir="false">
 					<include name="**/TEST-*.xml" />
 				</fileset>
