@@ -1314,11 +1314,13 @@ sendPasswordCaptchaEnabled=&quot;false&quot;</echo>
 			<if>
 				<os family="mac" />
 				<then>
-					<property name="selenium.chrome.driver.zip" value="chromedriver_mac32.zip" />
+<echo>prepare-chrome-driver: family=mac: using chromedriver_linux64.zip</echo>
+					<property name="selenium.chrome.driver.zip" value="chromedriver_mac64.zip" />
 				</then>
 				<elseif>
 					<os family="unix" />
 					<then>
+<echo>prepare-chrome-driver: family=unix: using chromedriver_linux64.zip</echo>
 						<property name="selenium.chrome.driver.zip" value="chromedriver_linux64.zip" />
 					</then>
 				</elseif>
@@ -1335,6 +1337,8 @@ sendPasswordCaptchaEnabled=&quot;false&quot;</echo>
 				</else>
 			</if>
 
+<echo>prepare-chrome-driver: selenium.chrome.driver.version = ${selenium.chrome.driver.version}</echo>
+<echo>prepare-chrome-driver: selenium.chrome.driver.zip = ${selenium.chrome.driver.zip}</echo>
 			<mirrors-get
 				dest="tools/selenium/${selenium.chrome.driver.zip}"
 				src="http://chromedriver.storage.googleapis.com/${selenium.chrome.driver.version}/${selenium.chrome.driver.zip}"
@@ -1350,11 +1354,22 @@ sendPasswordCaptchaEnabled=&quot;false&quot;</echo>
 			<if>
 				<os family="unix" />
 				<then>
+<echo>prepare-chrome-driver: family=unix: chmod ...</echo>
 					<chmod
 						file="tools/selenium/chromedriver"
 						perm="a+x"
 					/>
 				</then>
+				<elseif>
+					<os family="mac" />
+					<then>
+<echo>prepare-chrome-driver: family=mac: chmod ...</echo>
+						<chmod
+							file="tools/selenium/chromedriver"
+							perm="a+x"
+						/>
+					</then>
+				</elseif>
 			</if>
 		</sequential>
 	</macrodef>
