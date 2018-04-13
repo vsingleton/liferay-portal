@@ -1314,11 +1314,13 @@ sendPasswordCaptchaEnabled=&quot;false&quot;</echo>
 			<if>
 				<os family="mac" />
 				<then>
-					<property name="selenium.chrome.driver.zip" value="chromedriver_mac32.zip" />
+<echo>prepare-chrome-driver: family=mac: using chromedriver_linux64.zip</echo>
+					<property name="selenium.chrome.driver.zip" value="chromedriver_mac64.zip" />
 				</then>
 				<elseif>
 					<os family="unix" />
 					<then>
+<echo>prepare-chrome-driver: family=unix: using chromedriver_linux64.zip</echo>
 						<property name="selenium.chrome.driver.zip" value="chromedriver_linux64.zip" />
 					</then>
 				</elseif>
@@ -1335,6 +1337,8 @@ sendPasswordCaptchaEnabled=&quot;false&quot;</echo>
 				</else>
 			</if>
 
+<echo>prepare-chrome-driver: selenium.chrome.driver.version = ${selenium.chrome.driver.version}</echo>
+<echo>prepare-chrome-driver: selenium.chrome.driver.zip = ${selenium.chrome.driver.zip}</echo>
 			<mirrors-get
 				dest="tools/selenium/${selenium.chrome.driver.zip}"
 				src="http://chromedriver.storage.googleapis.com/${selenium.chrome.driver.version}/${selenium.chrome.driver.zip}"
@@ -1350,11 +1354,22 @@ sendPasswordCaptchaEnabled=&quot;false&quot;</echo>
 			<if>
 				<os family="unix" />
 				<then>
+<echo>prepare-chrome-driver: family=unix: chmod ...</echo>
 					<chmod
 						file="tools/selenium/chromedriver"
 						perm="a+x"
 					/>
 				</then>
+				<elseif>
+					<os family="mac" />
+					<then>
+<echo>prepare-chrome-driver: family=mac: chmod ...</echo>
+						<chmod
+							file="tools/selenium/chromedriver"
+							perm="a+x"
+						/>
+					</then>
+				</elseif>
 			</if>
 		</sequential>
 	</macrodef>
@@ -6499,7 +6514,7 @@ auto.deploy.dest.dir=C:/WINDOWS/system32/config/systemprofile/liferay/websphere-
 							<then>
 								<exec dir="${app.server.parent.dir}" executable="/bin/bash">
 									<arg value="-c" />
-									<arg value="keytool -genkey -alias tomcat -dname CN=localhost -keyalg RSA -keypass liferay -storepass liferay -keystore keystore.jks" />
+									<arg value="keytool -genkey -alias tomcat -dname CN=localhost -keyalg RSA -keypass liferay -storepass liferay -keystore keystore.jks -deststoretype pkcs12" />
 								</exec>
 							</then>
 							<elseif>
@@ -6507,7 +6522,7 @@ auto.deploy.dest.dir=C:/WINDOWS/system32/config/systemprofile/liferay/websphere-
 								<then>
 									<exec dir="${app.server.parent.dir}" executable="cmd">
 										<arg value="/c" />
-										<arg value="keytool -genkey -alias tomcat -dname CN=localhost -keyalg RSA -keypass liferay -storepass liferay -keystore keystore.jks" />
+										<arg value="keytool -genkey -alias tomcat -dname CN=localhost -keyalg RSA -keypass liferay -storepass liferay -keystore keystore.jks -deststoretype pkcs12" />
 									</exec>
 								</then>
 							</elseif>
@@ -6518,8 +6533,20 @@ auto.deploy.dest.dir=C:/WINDOWS/system32/config/systemprofile/liferay/websphere-
 				<replace
 					file="${app.server.dir}/conf/server.xml"
 					token="&lt;Service name=&quot;Catalina&quot;&gt;"
-					value="&lt;Service name=&quot;Catalina&quot; &gt;${line.separator}    &lt;Connector port=&quot;8443&quot; protocol=&quot;org.apache.coyote.http11.Http11Protocol&quot;${line.separator}           maxThreads=&quot;150&quot; SSLEnabled=&quot;true&quot; scheme=&quot;https&quot; secure=&quot;true&quot;${line.separator}           clientAuth=&quot;false&quot; sslProtocol=&quot;TLS&quot; keystoreFile=&quot;${app.server.parent.dir}/keystore.jks&quot; keystorePass=&quot;liferay&quot; /&gt;"
+					value="&lt;Service name=&quot;Catalina&quot; &gt;${line.separator}    &lt;Connector port=&quot;8443&quot; protocol=&quot;org.apache.coyote.http11.Http11NioProtocol&quot;${line.separator}           maxThreads=&quot;150&quot; SSLEnabled=&quot;true&quot; scheme=&quot;https&quot; secure=&quot;true&quot;${line.separator}           clientAuth=&quot;false&quot; sslProtocol=&quot;TLS&quot; keystoreFile=&quot;${app.server.parent.dir}/keystore.jks&quot; keystorePass=&quot;liferay&quot; /&gt;"
 				/>
+
+<echo>server.xml file: ${app.server.parent.dir}/conf/server.xml :</echo>
+
+				<for param="configFile">
+                     <path>
+                        <fileset dir="${app.server.dir}/conf" includes="server.xml" />
+                     </path>
+                     <sequential>
+                        <print-file file.name="@{configFile}" />
+                     </sequential>
+				</for>
+
 			</then>
 			<else>
 				<fail message="Enabling SSL for ${app.server.type} is not supported." />
