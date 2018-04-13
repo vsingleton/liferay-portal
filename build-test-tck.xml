@@ -4,6 +4,28 @@
 	<import file="build-test.xml" />
 
 	<if>
+		<or>
+			<os family="mac" />
+			<os family="unix" />
+		</or>
+		<then>
+			<exec executable="/bin/bash" resultproperty="which.mvn.result" outputproperty="which.mvn.output">
+				<arg value="-c" />
+				<arg value="which mvn" />
+			</exec>
+			<if>
+				<equals arg1="${which.mvn.result}" arg2="0" />
+					<then>
+						<exec executable="/bin/bash" resultproperty="mvn.home.result" outputproperty="maven.home">
+							<arg value="-c" />
+							<arg value="mvn --version | perl -lne '/^Maven home:/ and @_ = split and print $_[-1]'" />
+						</exec>
+					</then>
+			</if>
+		</then>
+	</if>
+
+	<if>
 		<isset property="env.M2_HOME" />
 		<then>
 			<property name="maven.home" value="${env.M2_HOME}" />
@@ -90,6 +112,8 @@
 					regexp="-\d..*"
 					replace=""
 				/>
+
+				<echo file="${liferay.home}/single.context" >${tck.servlet.context.name}</echo>
 
 				<if>
 					<equals arg1="${tck.servlet.context.names}" arg2="" />
@@ -251,7 +275,17 @@ tckDeployFiles=${tck.deploy.files}</echo>
 	</target>
 
 	<target name="deploy-portlet-tck-theme">
-		<gradle-execute dir="modules/test/portlet-tck-theme" task="deploy" />
+
+		<if>
+         <available file="${app.server.parent.dir}/osgi/war/portlet-tck-theme.war" />
+         <then>
+            <echo message="deploy-portlet-tck-theme: portlet-tck-theme already deployed ..." />
+         </then>
+         <else>
+				<gradle-execute dir="modules/test/portlet-tck-theme" task="deploy" />
+         </else>
+      </if>
+
 	</target>
 
 	<target name="prepare-portlet-tck">
@@ -263,6 +297,8 @@ tckDeployFiles=${tck.deploy.files}</echo>
 
 		<antcall target="prepare-portal-ssl" />
 
+		<prepare-chrome-driver />
+
 		<antcall target="undeploy-portlet-tck-bridge" />
 
 		<delete file="${liferay.home}/osgi/modules/com.liferay.portlet.tck.bridge.configuration.PortletTCKBridgeConfiguration.cfg" />
@@ -270,12 +306,12 @@ tckDeployFiles=${tck.deploy.files}</echo>
 
 	<target name="prepare-tck">
 		<echo>mvn -P liferay clean install</echo>
-
 		<maven
 			basedir="${portals.pluto.dir}"
 			goal="clean install"
 			options="-P liferay"
 		/>
+
 	</target>
 
 	<target name="prepare-tck-portal-ext-properties">
@@ -502,6 +538,14 @@ web.server.https.port=8443
 			<then>
 				<var name="test.arguments" value="${test.arguments} -Dtest.browser.webDriver='${test.browser.webDriver}'" />
 			</then>
+			<else>
+				<if>
+					<equals arg1="${test.browser}" arg2="chrome" />
+					<then>
+						<var name="test.arguments" value="${test.arguments} -Dtest.browser.webDriver='${project.dir}/tools/selenium/chromedriver'" />
+					</then>
+				</if>
+			</else>
 		</if>
 
 		<if>
@@ -566,14 +610,44 @@ web.server.https.port=8443
 			</then>
 		</if>
 
-		<echo>mvn -Prun-tck -Djava.awt.headless=true ${test.arguments} ${test.module.option} test</echo>
+		<!-- check for the deployed war needed to test -->
+		<if>
+			<not>
+				<equals arg1="${test.context}" arg2="tck-V2*" />
+			</not>
+			<then>
+				<exec executable="/bin/bash" outputproperty="single.war.property" >
+					<arg value="-c" />
+					<arg value="cat ${liferay.home}/single.context" />
+				</exec>
+				<if>
+					<not>
+						<available file="${liferay.home}/osgi/war/${single.war.property}.war" />
+					</not>
+					<then>
+						<echo>test-class: Why are we having to wait for the ${single.war.property}.war to deploy ... </echo>
+						<waitfor checkevery="1" maxwait="30" maxwaitunit="second" timeoutproperty="war.not.deployed.timeout">
+							<available file="${liferay.home}/osgi/war/${single.war.property}.war" />
+						</waitfor>
 
+						<if>
+							<isset property="war.not.deployed.timeout" />
+							<then>
+								<fail message="Timeout while waiting for ${single.war.property}.war to deploy." />
+							</then>
+						</if>
+
+					</then>
+				</if>
+			</then>
+		</if>
+
+		<echo>mvn -Pliferay,run-tck -Djava.awt.headless=true ${test.arguments} ${test.module.option} test</echo>
 		<maven
 			basedir="${tck.home}"
 			goal="test"
-			options="-Prun-tck -Djava.awt.headless=true ${test.arguments} ${test.module.option}"
+			options="-Pliferay,run-tck -Djava.awt.headless=true ${test.arguments} ${test.module.option}"
 		/>
-
 		<if>
 			<equals arg1="${maven.result}" arg2="0" />
 			<then>
@@ -592,6 +666,18 @@ web.server.https.port=8443
 				<copy
 					file="${tck.home}/driver/target/surefire-reports/TEST-javax.portlet.tck.driver.TCKSimpleTestDriver.xml"
 					tofile="${project.dir}/tck/test-results/TEST-javax.portlet.tck.driver.TCKSimpleTestDriver-${test.context}.xml"
+				/>
+			</then>
+		</if>
+
+		<if>
+			<available file="${tck.home}/driver/target/surefire-reports/TEST-javax.portlet.tck.driver.TCKLiferayTestDriver.xml" />
+			<then>
+				<mkdir dir="${project.dir}/tck/test-results" />
+
+				<copy
+					file="${tck.home}/driver/target/surefire-reports/TEST-javax.portlet.tck.driver.TCKLiferayTestDriver.xml"
+					tofile="${project.dir}/tck/test-results/TEST-javax.portlet.tck.driver.TCKLiferayTestDriver-${test.context}.xml"
 				/>
 			</then>
 		</if>
