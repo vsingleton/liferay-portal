@@ -270,12 +270,12 @@ tckDeployFiles=${tck.deploy.files}</echo>
 
 	<target name="prepare-tck">
 		<echo>mvn -P liferay clean install</echo>
-
 		<maven
 			basedir="${portals.pluto.dir}"
 			goal="clean install"
 			options="-P liferay"
 		/>
+
 	</target>
 
 	<target name="prepare-tck-portal-ext-properties">
@@ -502,6 +502,14 @@ web.server.https.port=8443
 			<then>
 				<var name="test.arguments" value="${test.arguments} -Dtest.browser.webDriver='${test.browser.webDriver}'" />
 			</then>
+			<else>
+				<if>
+					<equals arg1="${test.browser}" arg2="chrome" />
+					<then>
+						<var name="test.arguments" value="${test.arguments} -Dtest.browser.webDriver='${project.dir}/tools/selenium/chromedriver'" />
+					</then>
+				</if>
+			</else>
 		</if>
 
 		<if>
@@ -566,14 +574,14 @@ web.server.https.port=8443
 			</then>
 		</if>
 
-		<echo>mvn -Prun-tck -Djava.awt.headless=true ${test.arguments} ${test.module.option} test</echo>
-
+		<echo>mvn -Pliferay,run-tck -Djava.awt.headless=true ${test.arguments} ${test.module.option} test</echo>
+<!--
 		<maven
 			basedir="${tck.home}"
 			goal="test"
-			options="-Prun-tck -Djava.awt.headless=true ${test.arguments} ${test.module.option}"
+			options="-Pliferay,run-tck -Djava.awt.headless=true ${test.arguments} ${test.module.option}"
 		/>
-
+-->
 		<if>
 			<equals arg1="${maven.result}" arg2="0" />
 			<then>
