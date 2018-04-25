@@ -168,7 +168,7 @@ public class PortletTCKBridge {
 			}
 			else {
 				try {
-					Thread.sleep(100);
+					Thread.sleep(250);
 				}
 				catch (InterruptedException ie) {
 					if (_log.isWarnEnabled()) {
@@ -196,7 +196,7 @@ public class PortletTCKBridge {
 			try (ServerSocket serverSocket = new ServerSocket(
 					_portletTCKBridgeConfiguration.handshakeServerPort())) {
 
-				serverSocket.setSoTimeout(100);
+				serverSocket.setSoTimeout(250);
 
 				while (!Thread.interrupted()) {
 					try (Socket socket = serverSocket.accept();
