@@ -125,7 +125,7 @@
 					</else>
 				</if>
 
-				<echo>Copying '@{tck.war}' to '${liferay.home}/deploy/${tck.servlet.context.name}.war'</echo>
+				<echo>deploy-portlet-tck-bridge: Copying '@{tck.war}' to '${liferay.home}/deploy/${tck.servlet.context.name}.war'</echo>
 
 				<copy file="@{tck.war}" tofile="${liferay.home}/deploy/${tck.servlet.context.name}.war" />
 
@@ -174,7 +174,7 @@
 											<arg value="ls ${tck.deploy.files}/tck-@{context}-*.war" />
 										</exec>
 
-										<echo>Copying '${additional.war.file}' to '${liferay.home}/deploy/tck-@{context}.war'</echo>
+										<echo>deploy-portlet-tck-bridge: Copying '${additional.war.file}' to '${liferay.home}/deploy/tck-@{context}.war'</echo>
 
 										<copy file="${additional.war.file}" tofile="${liferay.home}/deploy/tck-@{context}.war" />
 
@@ -251,25 +251,31 @@ tckDeployFiles=${tck.deploy.files}</echo>
 		<if>
 			<available file=".testable.portal.started" />
 			<then>
-				<waitfor checkevery="100" checkeveryunit="millisecond" maxwait="9" maxwaitunit="minute" timeoutproperty="portlet.tck.bridge.deployment.timeout">
-					<socket port="${portlet.tck.bridge.handshake.port}" server="localhost" />
-				</waitfor>
+				<echo>deploy-portlet-tck-bridge: marker file found .testable.portal.started</echo>
+			</then>
+			<else>
+				<echo>deploy-portlet-tck-bridge: no such file: .testable.portal.started</echo>
+			</else>
+		</if>
 
-				<if>
-					<isset property="portlet.tck.bridge.deployment.timeout" />
-					<then>
-						<for param="logfile">
-							<path>
-								<fileset dir="${liferay.home}/logs" includes="*.log" />
-							</path>
-							<sequential>
-								<print-file file.name="@{logfile}" />
-							</sequential>
-						</for>
+		<echo>deploy-portlet-tck-bridge: Waiting for localhost:portlet.tck.bridge.handshake.port = ${portlet.tck.bridge.handshake.port} ...</echo>
+		<waitfor checkevery="250" checkeveryunit="millisecond" maxwait="9" maxwaitunit="minute" timeoutproperty="portlet.tck.bridge.deployment.timeout">
+			<socket port="${portlet.tck.bridge.handshake.port}" server="localhost" />
+		</waitfor>
 
-						<fail message="Timeout while waiting for portlet-tck-bridge to deploy." />
-					</then>
-				</if>
+		<if>
+			<isset property="portlet.tck.bridge.deployment.timeout" />
+			<then>
+				<for param="logfile">
+					<path>
+						<fileset dir="${liferay.home}/logs" includes="*.log" />
+					</path>
+					<sequential>
+						<print-file file.name="@{logfile}" />
+					</sequential>
+				</for>
+
+				<fail message="Timeout while waiting for portlet-tck-bridge to deploy." />
 			</then>
 		</if>
 	</target>
@@ -277,14 +283,46 @@ tckDeployFiles=${tck.deploy.files}</echo>
 	<target name="deploy-portlet-tck-theme">
 
 		<if>
-         <available file="${app.server.parent.dir}/osgi/war/portlet-tck-theme.war" />
-         <then>
-            <echo message="deploy-portlet-tck-theme: portlet-tck-theme already deployed ..." />
-         </then>
-         <else>
+			<available file="${app.server.parent.dir}/osgi/war/portlet-tck-theme.war" />
+			<then>
+				<echo message="deploy-portlet-tck-theme: portlet-tck-theme already deployed ..." />
+			</then>
+			<else>
 				<gradle-execute dir="modules/test/portlet-tck-theme" task="deploy" />
-         </else>
-      </if>
+			</else>
+		</if>
+
+	</target>
+
+	<target name="prepare-session-timeout">
+
+		<if>
+			<available file="${app.server.dir}/webapps/ROOT/WEB-INF/web.xml" />
+			<then>
+				<if>
+					<isset property="test.session.timeout" />
+					<then>
+						<if>
+							<equals arg1="${app.server.type}" arg2="tomcat" />
+							<then>
+								<replace
+									file="${app.server.dir}/webapps/ROOT/WEB-INF/web.xml"
+									token="&lt;session-timeout&gt;30&lt;/session-timeout&gt;"
+									value="&lt;session-timeout&gt;${test.session.timeout}&lt;/session-timeout&gt;"
+								/>
+							</then>
+							<else>
+								<fail message="Changing the session timeout for ${app.server.type} is not supported." />
+							</else>
+						</if>
+					</then>
+  				</if>
+			</then>
+			<else>
+				<echo>WARNING: unable to set session-timeout to ${test.session.timeout}</echo>
+				<echo>WARNING: ${app.server.dir}/webapps/ROOT/WEB-INF/web.xml not available.</echo>
+			</else>
+		</if>
 
 	</target>
 
@@ -297,6 +335,8 @@ tckDeployFiles=${tck.deploy.files}</echo>
 
 		<antcall target="prepare-portal-ssl" />
 
+		<antcall target="prepare-session-timeout" />
+
 		<prepare-chrome-driver />
 
 		<antcall target="undeploy-portlet-tck-bridge" />
@@ -305,12 +345,48 @@ tckDeployFiles=${tck.deploy.files}</echo>
 	</target>
 
 	<target name="prepare-tck">
-		<echo>mvn -P liferay clean install</echo>
+		<echo>mvn -P all,liferay clean install</echo>
 		<maven
 			basedir="${portals.pluto.dir}"
 			goal="clean install"
-			options="-P liferay"
+			options="-P all,liferay"
 		/>
+		<if>
+			<equals arg1="${maven.result}" arg2="0" />
+			<then>
+				<echo message="PASSED: maven.result = ${maven.result}" />
+			</then>
+			<else>
+				<echo message="FAILED: maven.result = ${maven.result} ... failed to build the tck from the pluto repo." />
+			</else>
+		</if>
+
+		<exec executable="/bin/bash" outputproperty="deploy.count.property">
+			<arg value="-c" />
+			<arg value="ls ${tck.home}/deploy/target/deploy-files/*.war | wc -l" />
+		</exec>
+		<echo>prepare-tck: deploy.count.property = ${deploy.count.property}</echo>
+
+		<if>
+			<equals arg1="${deploy.count.property}" arg2="53" />
+			<then>
+
+				<echo>prepare-tck: 53 wars are available for testing ...</echo>
+
+			</then>
+			<else>
+
+				<echo>prepare-tck: ls ${tck.home}/deploy/target/deploy-files/*.war ...</echo>
+				<exec executable="/bin/bash" outputproperty="deploy.files.property">
+					<arg value="-c" />
+					<arg value="ls ${tck.home}/deploy/target/deploy-files/*.war" />
+				</exec>
+				<echo>prepare-tck: deploy.files.property = ${deploy.files.property}</echo>
+
+				<fail message="FAILED: 53 wars were NOT built my mvn against the pluto repo for running the TCK." />
+
+			</else>
+		</if>
 
 	</target>
 
@@ -336,6 +412,8 @@ theme.portlet.decorate.default=false
 users.reminder.queries.enabled=false
 
 web.server.https.port=8443
+
+session.timeout=240
 		</echo>
 
 		<print-file file.name="${liferay.home}/portal-ext.properties" />
@@ -610,38 +688,6 @@ web.server.https.port=8443
 			</then>
 		</if>
 
-		<!-- check for the deployed war needed to test -->
-		<if>
-			<not>
-				<equals arg1="${test.context}" arg2="tck-V2*" />
-			</not>
-			<then>
-				<exec executable="/bin/bash" outputproperty="single.war.property" >
-					<arg value="-c" />
-					<arg value="cat ${liferay.home}/single.context" />
-				</exec>
-				<if>
-					<not>
-						<available file="${liferay.home}/osgi/war/${single.war.property}.war" />
-					</not>
-					<then>
-						<echo>test-class: Why are we having to wait for the ${single.war.property}.war to deploy ... </echo>
-						<waitfor checkevery="1" maxwait="30" maxwaitunit="second" timeoutproperty="war.not.deployed.timeout">
-							<available file="${liferay.home}/osgi/war/${single.war.property}.war" />
-						</waitfor>
-
-						<if>
-							<isset property="war.not.deployed.timeout" />
-							<then>
-								<fail message="Timeout while waiting for ${single.war.property}.war to deploy." />
-							</then>
-						</if>
-
-					</then>
-				</if>
-			</then>
-		</if>
-
 		<echo>mvn -Pliferay,run-tck -Djava.awt.headless=true ${test.arguments} ${test.module.option} test</echo>
 		<maven
 			basedir="${tck.home}"
@@ -654,7 +700,7 @@ web.server.https.port=8443
 				<echo message="PASSED: maven.result = ${maven.result}" />
 			</then>
 			<else>
-				<echo message="FAILED: maven.result = ${maven.result}" />
+				<echo message="FAILED: maven.result = ${maven.result} ... failed the tck." />
 			</else>
 		</if>
 
