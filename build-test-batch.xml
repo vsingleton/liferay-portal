@@ -3326,6 +3326,7 @@ app.server.type=@{app.server.type}]]></echo>
 
 						<wait-for-app-server-log-message log.message="Hook for com.liferay.faces.test.setup.hook is available for use" />
 
+<echo>Starting test of JSF portlets ...</echo>
 						<execute dir="${liferay.faces.showcase.dir}/jsf-showcase-webapp">
 							mvn clean install --quiet -P selenium -Dit.test=none -DfailIfNoTests=false
 						</execute>
