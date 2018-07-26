@@ -14,32 +14,17 @@
 
 package com.liferay.portlet.tck.bridge;
 
-import com.liferay.petra.log4j.Log4JUtil;
-import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.module.framework.ModuleServiceLifecycle;
-import com.liferay.portal.kernel.servlet.ServletContextPool;
-import com.liferay.portal.kernel.util.ThreadUtil;
-import com.liferay.portal.kernel.util.Time;
-import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.struts.StrutsActionRegistryUtil;
-import com.liferay.portlet.tck.bridge.configuration.PortletTCKBridgeConfiguration;
-import com.liferay.portlet.tck.bridge.setup.Setup;
-import com.liferay.portlet.tck.bridge.struts.PortletTCKStrutsAction;
-
 import java.io.IOException;
 import java.io.OutputStream;
-
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
-
 import java.nio.charset.Charset;
-
+import java.util.Enumeration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
+import java.util.regex.Pattern;
 
 import javax.servlet.ServletContext;
 
@@ -50,6 +35,19 @@ import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
+
+import com.liferay.petra.log4j.Log4JUtil;
+import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.module.framework.ModuleServiceLifecycle;
+import com.liferay.portal.kernel.servlet.ServletContextPool;
+import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.struts.StrutsActionRegistryUtil;
+import com.liferay.portlet.tck.bridge.configuration.PortletTCKBridgeConfiguration;
+import com.liferay.portlet.tck.bridge.setup.Setup;
+import com.liferay.portlet.tck.bridge.struts.PortletTCKStrutsAction;
 
 /**
  * @author Matthew Tambara
@@ -75,6 +73,27 @@ public class PortletTCKBridge {
 				PortletTCKBridgeConfiguration.class,
 				componentContext.getProperties());
 
+//		System.out.println("activate: using PortletLocalServiceUtil.getPortlets ...");
+//		List<Portlet> ps = PortletLocalServiceUtil.getPortlets();
+//		for (Portlet portlet : ps) {
+//			String portletName = portlet.getPortletName();
+//			String contextName = portlet.getContextName();
+//			if (Pattern.compile(Pattern.quote("V3"), Pattern.CASE_INSENSITIVE).matcher(portletName).find() ||
+//				Pattern.compile(Pattern.quote("V3"), Pattern.CASE_INSENSITIVE).matcher(contextName).find()) {
+//				System.out.println("activate: portlet.getPortletName() = " + portlet.getPortletName() + " contextName = " + portlet.getContextName());
+//			}
+//		}
+//
+//		System.err.println("activate: ...");
+//
+//		Set<String> servletContextPoolKeySet = ServletContextPool.keySet();
+//		System.out.println("activate: using ServletContextPool.keySet ...");
+//		for (String servletContextName : servletContextPoolKeySet) {
+//			if (Pattern.compile(Pattern.quote("V3"), Pattern.CASE_INSENSITIVE).matcher(servletContextName).find()) {
+//				System.out.println("activate: servletContextName = " + servletContextName);
+//			}
+//		}
+
 		String[] servletContextNames =
 			portletTCKBridgeConfiguration.servletContextNames();
 
@@ -82,6 +101,7 @@ public class PortletTCKBridge {
 		// They need to be available before setting up sites and pages
 
 		for (String servletContextName : servletContextNames) {
+//			System.out.println("activate: setting up wait for servletContextName = " + servletContextName);
 			_waitForDeployment(
 				servletContextName, System.currentTimeMillis(),
 				portletTCKBridgeConfiguration.timeout() * Time.SECOND);
@@ -141,21 +161,42 @@ public class PortletTCKBridge {
 
 			boolean found = false;
 
+			_log.info("_waitForDeployment: servletContextName = " + servletContextName);
+
 			if (servletContext != null) {
 				found = true;
+
+				Enumeration<String> attributeNames = servletContext.getAttributeNames();
+				while (attributeNames.hasMoreElements()) {
+					String attributeName = attributeNames.nextElement();
+					if (Pattern.compile(Pattern.quote("beanPortletIds"), Pattern.CASE_INSENSITIVE).matcher(attributeName).find() ||
+						Pattern.compile(Pattern.quote("plugin"), Pattern.CASE_INSENSITIVE).matcher(attributeName).find()) {
+						_log.info("_waitForDeployment: attributeName = " + attributeName);
+					}
+				}
+
+				_log.info("_waitForDeployment: servletContext.getAttribute(com.liferay.beanPortletIds) = " + servletContext.getAttribute("com.liferay.beanPortletIds"));
+				_log.info("_waitForDeployment: servletContext.getAttribute(WebKeys.BEAN_PORTLET_IDS) = " + servletContext.getAttribute(WebKeys.BEAN_PORTLET_IDS));
+				_log.info("_waitForDeployment: servletContext.getAttribute(WebKeys.PLUGIN_PORTLETS) = " + servletContext.getAttribute(WebKeys.PLUGIN_PORTLETS));
+
 			}
 
+			_log.info("_waitForDeployment: 1 found = " + found);
+
 			if (found) {
-				if (servletContext.getAttribute(WebKeys.PLUGIN_PORTLETS) ==
-						null) {
+				if (servletContext.getAttribute("com.liferay.beanPortletIds") == null) {
+					if (servletContext.getAttribute(WebKeys.BEAN_PORTLET_IDS) == null) {
+						if (servletContext.getAttribute(WebKeys.PLUGIN_PORTLETS) == null) {
+							if (servletContext.getAttribute(WebKeys.PLUGIN_THEMES) == null) {
 
-					if (servletContext.getAttribute(WebKeys.PLUGIN_THEMES) ==
-							null) {
-
-						found = false;
+								found = false;
+							}
+						}
 					}
 				}
 			}
+
+			_log.info("_waitForDeployment: 1 found = " + found);
 
 			if (found) {
 				if (_log.isInfoEnabled()) {
@@ -179,7 +220,7 @@ public class PortletTCKBridge {
 		}
 
 		_log.error("Timeout waiting for " + servletContextName);
-		_log.error(ThreadUtil.threadDump());
+//		_log.error(ThreadUtil.threadDump());
 	}
 
 	private static final String _PATH = "/portal/tck";

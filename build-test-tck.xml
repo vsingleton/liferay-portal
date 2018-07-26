@@ -49,7 +49,7 @@
 		<isset property="tck.deploy.files" />
 	</condition>
 
-	<condition else="tck-V2*" property="test.context" value="${test.context}">
+	<condition else="tck-V*" property="test.context" value="${test.context}">
 		<isset property="test.context" />
 	</condition>
 
@@ -132,7 +132,7 @@
 				<!-- check for additional wars to deploy, if any -->
 				<if>
 					<not>
-						<equals arg1="${test.context}" arg2="tck-V2*" />
+						<equals arg1="${test.context}" arg2="tck-V*" />
 					</not>
 					<then>
 
@@ -148,10 +148,15 @@
 						<var name="test.cases"
 							value="${tck.home}/*/src/main/resources/xml-resources/additionalTCs.xml" />
 
+<echo>test.war = ${test.war}</echo>
+<echo>test.cases = ${test.cases}</echo>
+
 						<exec executable="/bin/bash" outputproperty="additional.contexts">
 							<arg value="-c" />
 							<arg value="grep -l ${test.war} ${test.cases} | grep -v ${test.war} | cut -c${len.tck.home}- | cut -d\/ -f2" />
 						</exec>
+
+<echo>additional.contexts = ${additional.contexts}</echo>
 
 						<if>
 							<not>
@@ -164,6 +169,7 @@
 									property="csv.contexts"
 									regexp="\n"
 									replace=","
+									defaultValue="${additional.contexts}"
 								/>
 								<for list="${csv.contexts}" param="context">
 									<sequential>
@@ -345,11 +351,6 @@ tckDeployFiles=${tck.deploy.files}</echo>
 	</target>
 
 	<target name="prepare-tck">
-		<echo>prepare-tck: 791fd755e7c7a9192e4ced540c1f172bc40adcc3_plus_tck3-ci-htmlunit</echo>
-		<echo>prepare-tck: $ cd ${tck.home}</echo>
-		<echo>prepare-tck: $ git log -1 --pretty=format:%h</echo>
-		<echo>prepare-tck: 5deaef604</echo>
-		<echo>prepare-tck: $ </echo>
 		<echo>prepare-tck: mvn -P all,liferay clean install</echo>
 		<maven
 			basedir="${portals.pluto.dir}"
@@ -388,7 +389,7 @@ tckDeployFiles=${tck.deploy.files}</echo>
 				</exec>
 				<echo>prepare-tck: deploy.files.property = ${deploy.files.property}</echo>
 
-				<fail message="FAILED: 53 wars were NOT built my mvn against the pluto repo for running the TCK." />
+				<fail message="FAILED: 53 wars were NOT built my maven against the pluto repo for running the TCK." />
 
 			</else>
 		</if>
@@ -419,6 +420,8 @@ users.reminder.queries.enabled=false
 web.server.https.port=8443
 
 session.timeout=240
+
+include-and-override=portal-developer.properties
 		</echo>
 
 		<print-file file.name="${liferay.home}/portal-ext.properties" />
@@ -453,7 +456,7 @@ session.timeout=240
 					DirectoryScanner directoryScanner = new DirectoryScanner();
 
 					directoryScanner.setBasedir(new File(project.getProperty("tck.deploy.files")));
-					directoryScanner.setIncludes(new String[] {"tck-V2*.war"});
+					directoryScanner.setIncludes(new String[] {"tck-V*.war"});
 
 					directoryScanner.scan();
 
@@ -552,7 +555,7 @@ session.timeout=240
 		</if>
 
 		<if>
-			<equals arg1="${test.context}" arg2="tck-V2*" />
+			<equals arg1="${test.context}" arg2="tck-V*" />
 			<then>
 				<property name="starts.with" value="" />
 			</then>
@@ -563,8 +566,8 @@ session.timeout=240
 			</else>
 		</if>
 
-		<condition else="${test.context}" property="test.module.context" value="tck-V2">
-			<equals arg1="${test.context}" arg2="tck-V2*" />
+		<condition else="${test.context}" property="test.module.context" value="tck-V">
+			<equals arg1="${test.context}" arg2="tck-V*" />
 		</condition>
 
 		<propertyregex
@@ -793,7 +796,7 @@ session.timeout=240
 				</for>
 
 				<antcall target="test-class">
-					<param name="test.context" value="tck-V2*" />
+					<param name="test.context" value="tck-V*" />
 				</antcall>
 
 				<antcall target="clean-up-tck-dependencies" />
