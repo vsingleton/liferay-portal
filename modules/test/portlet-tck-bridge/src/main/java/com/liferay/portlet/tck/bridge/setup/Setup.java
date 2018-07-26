@@ -135,8 +135,8 @@ public class Setup {
 					// TODO remove V2.  Later the V2 prefix may go away
 					// when we start implementing portlet 3.
 
-					if ("tck-V2*".equals(servletContextName)) {
-						prefix = "V2";
+					if ("tck-V*".equals(servletContextName)) {
+						prefix = "V";
 					}
 
 					if (pageName.startsWith(prefix)) {
@@ -346,7 +346,7 @@ public class Setup {
 
 			// establish the servletContextName for this page, if it is a glob
 
-			if ("tck-V2*".equals(servletContextName)) {
+			if ("tck-V*".equals(servletContextName)) {
 				servletContextName = _getServletContextName(
 					portalPageName, servletContextNames);
 			}
