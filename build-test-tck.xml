@@ -625,7 +625,7 @@ include-and-override=portal-developer.properties
 			</else>
 		</if>
 
-		<var name="test.ignore.list.file.chrome" value="${tck.home}/driver/src/main/resources/xml-resources/ignoredTestCases_that_pass_under_htmlunit.xml" />
+		<var name="test.ignore.list.file.chrome" value="${tck.home}/driver/src/main/resources/xml-resources/htmlunit_tests.xml" />
 		<var name="test.browser.arguments.chrome" value="${test.browser.arguments.chrome} -Dtest.ignore.list.file=${test.ignore.list.file.chrome}" />
 
 		<var name="test.arguments" value="" />
@@ -695,7 +695,7 @@ include-and-override=portal-developer.properties
 		<var name="test.browser.htmlunit" value="htmlUnit" />
 		<var name="test.browser.webDriver.htmlunit" value="" />
 		<var name="test.browser.binary.htmlunit" value="" />
-		<var name="test.ignore.list.file.htmlunit" value="${tck.home}/driver/src/main/resources/xml-resources/ignoredTestCases_that_fail_under_htmlunit.xml" />
+		<var name="test.ignore.list.file.htmlunit" value="${tck.home}/driver/src/main/resources/xml-resources/chrome_tests.xml" />
 
 		<var name="test.browser.arguments.htmlunit" value="-Dtest.browser=${test.browser.htmlunit}" />
 		<var name="test.browser.arguments.htmlunit" value="${test.browser.arguments.htmlunit} -Dtest.browser.webDriver=${test.browser.webDriver.htmlunit}" />
