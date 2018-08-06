@@ -14,6 +14,17 @@
 
 package com.liferay.portlet.tck.bridge.setup;
 
+import java.io.File;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+
+import org.osgi.framework.Bundle;
+
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.NoSuchGroupException;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -44,19 +55,6 @@ import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
 import com.liferay.portlet.tck.bridge.configuration.PortletTCKBridgeConfiguration;
-
-import java.io.File;
-
-import java.net.URL;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-
-import org.osgi.framework.Bundle;
 
 /**
  * @author Vernon Singleton
@@ -102,6 +100,15 @@ public class Setup {
 			String[] servletContextNames =
 				portletTCKBridgeConfiguration.servletContextNames();
 
+			HashMap<String, String> excludedName = new HashMap<>();
+
+			String[] excludeWarNames =
+				portletTCKBridgeConfiguration.excludeWarNames();
+
+			for (String warName : excludeWarNames) {
+				excludedName.put(warName, "1");
+			}
+
 			for (String servletContextName : servletContextNames) {
 
 				Document document = SAXReaderUtil.read(configFileURL);
@@ -117,55 +124,54 @@ public class Setup {
 				while (pageElementIterator.hasNext()) {
 					Element pageElement = pageElementIterator.next();
 
-					Attribute nameAttribute = pageElement.attribute("name");
+					Attribute pageNameAttribute = pageElement.attribute("name");
 
-					String pageName = nameAttribute.getValue();
+					String pageName = pageNameAttribute.getValue();
 
-					HashMap<String, String> excludedName = new HashMap<>();
-
-					String[] excludeWarNames =
-						portletTCKBridgeConfiguration.excludeWarNames();
-
-					for (String warName : excludeWarNames) {
-						excludedName.put(warName, "1");
-					}
-
-					String prefix = servletContextName.replaceFirst("tck-", "");
-
-					// TODO remove V2.  Later the V2 prefix may go away
-					// when we start implementing portlet 3.
+					String startsWith = "/" + servletContextName;
 
 					if ("tck-V*".equals(servletContextName)) {
-						prefix = "V";
+						startsWith = "/tck-V";
 					}
 
-					if (pageName.startsWith(prefix)) {
-						if (excludedName.get(pageName) == null) {
-							List<Element> portletElements =
-								pageElement.elements(
-									"portlet");
-							List<Portlet> portlets = new LinkedList<>();
+					Iterator<Element> portletElementIterator =
+							pageElement.elementIterator("portlet");
 
-							for (int i = 0; i < portletElements.size();
-								 i += 2) {
-								portlets.add(
-									_createPortlet(
-										portletElements.get(i), pageName));
+					while (portletElementIterator.hasNext()) {
+						Element portletElement = portletElementIterator.next();
+						Attribute contextAttribute = portletElement.attribute("context");
+						Attribute portletNameAttribute = portletElement.attribute("name");
+
+						if (contextAttribute.getValue().startsWith(startsWith)) {
+							System.err.println("setupPortletTCKSite: pageName = " + pageName);
+							System.err.println("setupPortletTCKSite: portletNameAttribute.getValue() = " + portletNameAttribute.getValue());
+							if (excludedName.get(pageName) == null) {
+								List<Element> portletElements =
+									pageElement.elements("portlet");
+								List<Portlet> portlets = new LinkedList<>();
+
+								for (int i = 0; i < portletElements.size();
+									 i += 2) {
+									portlets.add(
+										_createPortlet(
+											portletElements.get(i), pageName));
+								}
+
+								for (int i = 1; i < portletElements.size();
+									 i += 2) {
+									portlets.add(
+										_createPortlet(
+											portletElements.get(i), pageName));
+								}
+
+								PortalPage portalPage = new PortalPage(
+									pageName, portlets);
+
+								_setupPage(
+									userId, groupId, portalPage, servletContextName,
+									servletContextNames);
 							}
-
-							for (int i = 1; i < portletElements.size();
-								 i += 2) {
-								portlets.add(
-									_createPortlet(
-										portletElements.get(i), pageName));
-							}
-
-							PortalPage portalPage = new PortalPage(
-								pageName, portlets);
-
-							_setupPage(
-								userId, groupId, portalPage, servletContextName,
-								servletContextNames);
+							break;
 						}
 					}
 				}
