@@ -26,7 +26,7 @@ repositories {
 }
 
 task createWorkspace {
-	File workspaceDir = new File("build/workspace")
+	File workspaceDir = new File("test")
 
 	if (!workspaceDir.exists()) {
 		workspaceDir.mkdirs()
@@ -41,7 +41,7 @@ task createWorkspace {
 		workingDir = workspaceDir
 	}
 
-	File modulesDir = new File("build/workspace/sampleWorkspace/modules")
+	File modulesDir = new File("test/sampleWorkspace/modules")
 
 	def modulesArgs = ["--template", "mvc-portlet", "--name", "sample-mvc-portlet"]
 
@@ -52,9 +52,9 @@ task createWorkspace {
 		workingDir = modulesDir
 	}
 
-	File workspaceBuildFile = new File(workspaceDir, "build.gradle")
+	File workspaceBuildFile = new File(workspaceDir, "sampleWorkspace/build.gradle")
 
 	workspaceBuildFile.write "allprojects {\n"
-	workspaceBuildFile << ":modules:test:workspace-test-site:deploy\n"
+	workspaceBuildFile << "dependsOn :modules:test:workspace-test-site:deploy\n"
 	workspaceBuildFile << "}"
 }
