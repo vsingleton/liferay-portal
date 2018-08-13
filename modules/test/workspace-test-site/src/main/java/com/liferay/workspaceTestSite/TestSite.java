@@ -25,10 +25,12 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
+import java.util.regex.Pattern;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -141,12 +143,21 @@ public class TestSite {
 
 		_handshakeServerFuture = futureTask;
 
+		String wd = System.getProperty("user.dir");
+		System.err.println("activate: wd = " + wd);
+
+		Map<String, String> env = System.getenv();
+		for (String envName : env.keySet()) {
+		    System.out.format("activate: %s=%s%n", envName, env.get(envName));
+		}
+
 		Thread handshakeServerThread = new Thread(
 			futureTask, "Handshake server thread");
 
 		handshakeServerThread.setDaemon(true);
 
 		handshakeServerThread.start();
+
 	}
 
 	@Deactivate
@@ -187,6 +198,9 @@ public class TestSite {
 			List<Portlet> portlets = PortletLocalServiceUtil.getPortlets();
 			for (Portlet portlet : portlets) {
 				String portletName = portlet.getPortletName();
+				if (Pattern.compile(Pattern.quote("sample"), Pattern.CASE_INSENSITIVE).matcher(portletName).find()) {
+					System.err.println("_waitForDeployment: portletName = " + portletName + " portlet.isActive() = " + portlet.isActive());
+				}
 				found = portletName.equals(waitingForName) && portlet.isActive();
 				if (found) {
 					break;
@@ -204,7 +218,7 @@ public class TestSite {
 			}
 			else {
 				try {
-					Thread.sleep(250);
+					Thread.sleep(750);
 				}
 				catch (InterruptedException ie) {
 					if (_log.isWarnEnabled()) {

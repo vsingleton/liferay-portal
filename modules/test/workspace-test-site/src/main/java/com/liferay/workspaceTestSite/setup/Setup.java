@@ -199,9 +199,18 @@ public class Setup {
 		Layout portalPageLayout = null;
 
 		List<Layout> layouts = LayoutLocalServiceUtil.getLayouts(groupId, true);
+		for (Layout layout : layouts) {
+			if (layout.getName(Locale.US).equals(portalPageName)) {
+				System.out.println("_getPortalPageLayout: found layout using LayoutLocalServiceUtil.getLayouts(groupId, true) ...");
+				portalPageLayout = layout;
+			}
+		}
+
+		layouts = LayoutLocalServiceUtil.getLayouts(groupId, false);
 
 		for (Layout layout : layouts) {
 			if (layout.getName(Locale.US).equals(portalPageName)) {
+				System.out.println("_getPortalPageLayout: found layout using LayoutLocalServiceUtil.getLayouts(groupId, false) ...");
 				portalPageLayout = layout;
 			}
 		}
@@ -212,8 +221,9 @@ public class Setup {
 			String friendlyURL = "/" + StringUtil.toLowerCase(portalPageName);
 
 			portalPageLayout = ServiceUtil.addLayout(
-				userId, groupId, true, parentLayoutId, portalPageName,
+				userId, groupId, false, parentLayoutId, portalPageName,
 				portalPageName, portalPageName, type, false, friendlyURL);
+			System.out.println("_getPortalPageLayout: added layout using ServiceUtil.addLayout ...");
 		}
 
 		return portalPageLayout;
