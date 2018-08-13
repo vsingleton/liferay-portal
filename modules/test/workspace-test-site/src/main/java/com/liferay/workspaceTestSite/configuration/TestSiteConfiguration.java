@@ -39,7 +39,7 @@ public interface TestSiteConfiguration {
 	@Meta.AD(deflt = "", required = false)
 	public String testContext();
 
-	@Meta.AD(deflt = "1200", required = false)
+	@Meta.AD(deflt = "600", required = false)
 	public long timeout();
 
 }
