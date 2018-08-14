@@ -26,7 +26,6 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
@@ -109,9 +108,6 @@ public class TestSite {
 			
 			for (int p = 0; p < pages.length(); p++) {
 			    JSONObject page = (JSONObject) pages.get(p);
-			    String name = page.getString("name");
-//			    System.out.println("activate: page name = " + name);
-			    
 			    JSONArray portlets = page.getJSONArray("portlets");
 			    
 			    for (int o = 0; o < portlets.length(); o++) {
@@ -125,12 +121,10 @@ public class TestSite {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		Set<String> portletSet = portletMap.keySet();
-	    for (String portlet : portletSet) {
-	    	System.out.println("activate: setting up wait for portlet = " + portlet);
+
+		for (Map.Entry<String, String> portlet : portletMap.entrySet()) {
 	    	_waitForDeployment(
-				portlet, System.currentTimeMillis(),
+				portlet.getKey(), System.currentTimeMillis(),
 				testSiteConfiguration.timeout() * Time.SECOND);
 	    }
 
@@ -147,8 +141,9 @@ public class TestSite {
 		System.err.println("activate: wd = " + wd);
 
 		Map<String, String> env = System.getenv();
-		for (String envName : env.keySet()) {
-		    System.out.format("activate: %s=%s%n", envName, env.get(envName));
+		// for (String envName : env.keySet()) 
+		for (Map.Entry<String, String> envEntry : env.entrySet()) {
+		    System.out.format("activate: %s=%s%n", envEntry.getKey(), envEntry.getValue());
 		}
 
 		Thread handshakeServerThread = new Thread(
