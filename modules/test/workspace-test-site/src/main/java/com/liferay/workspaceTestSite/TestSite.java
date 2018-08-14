@@ -14,6 +14,7 @@
 
 package com.liferay.workspaceTestSite;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.ServerSocket;
@@ -48,6 +49,7 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.module.framework.ModuleServiceLifecycle;
 import com.liferay.portal.kernel.service.PortletLocalServiceUtil;
+import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.ThreadUtil;
 import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.struts.StrutsActionRegistryUtil;
@@ -137,13 +139,21 @@ public class TestSite {
 
 		_handshakeServerFuture = futureTask;
 
-		String wd = System.getProperty("user.dir");
-		System.err.println("activate: wd = " + wd);
-
-		Map<String, String> env = System.getenv();
-		// for (String envName : env.keySet()) 
-		for (Map.Entry<String, String> envEntry : env.entrySet()) {
-		    System.out.format("activate: %s=%s%n", envEntry.getKey(), envEntry.getValue());
+		String liferayHome = PropsUtil.get("liferay.home");
+		File moduleDirFile = new File(liferayHome + "/osgi/modules/");
+		File[] files = moduleDirFile.listFiles();
+		if (files == null) {
+			System.err.println("activate: no files in moduleDirFile.getAbsolutePath() = " + moduleDirFile.getAbsolutePath());
+		} else {
+			for (File file : files) {
+				String fileName = file.getName();
+				if (fileName.contains(TestSiteConfiguration.class.getName())) {
+					boolean deleted = file.delete();
+					if (deleted) {
+						System.out.println("activate: removed " + TestSiteConfiguration.class.getName() + ".cfg ...");
+					}
+				}
+			}
 		}
 
 		Thread handshakeServerThread = new Thread(
