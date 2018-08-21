@@ -10,8 +10,10 @@ import PortletConstants from './portlet_constants.es';
 import {
 	decodeUpdateString,
 	encodeFormAsString,
+	getPageRenderState,
 	getUpdatedPublicRenderParameters,
 	getUrl,
+	validateArguments,
 	validateForm,
 	validateParameters,
 	validateState
@@ -50,7 +52,7 @@ let busy = false;
  * @review
  */
 
-const eventListeners = [];
+const eventListeners = {};
 
 /**
  * An array containing the event listeners currently queued for being dispatched.
@@ -58,7 +60,7 @@ const eventListeners = [];
  * @review
  */
 
-const eventListenerQueue = [];
+const eventListenersQueue = [];
 
 /**
  * A flag indicating if the PortletInit has been initialized
@@ -77,14 +79,6 @@ let initialized = false;
 let pageRenderState;
 
 /**
- * The currently registered portlets.
- * @type {Object}
- * @review
- */
-
-const registeredPortlets = {};
-
-/**
  * PortletInit
  * @review
  */
@@ -96,14 +90,10 @@ class PortletInit {
 		this.constants = Object.assign({}, PortletConstants);
 
 		if (!initialized) {
-			pageRenderState = global.portlet.getInitData();
-
+			pageRenderState = getPageRenderState();
 			this._updateHistory(true);
-
 			initialized = true;
 		}
-
-		registeredPortlets[portletId] = this;
 	}
 
 	/**
@@ -136,9 +126,11 @@ class PortletInit {
 									url,
 									{
 										body: formData,
+										credentials: 'same-origin',
 										method: method
 									}
 								);
+
 							}
 							else {
 								const fstr = encodeFormAsString(this._portletId, element);
@@ -154,19 +146,20 @@ class PortletInit {
 									xhr = fetch(
 										url,
 										{
+											credentials: 'same-origin',
 											method: method
 										}
 									);
 								}
 								else {
-									const headers = new Headers();
-									headers.append('Content-Type', 'applicacion/x-www-form-urlencoded');
-									headers.append('Content-Length', fstr.length);
-
 									xhr = fetch(
 										url,
 										{
-											headers: headers,
+											body: fstr,
+											credentials: 'same-origin',
+											headers: {
+												'Content-Type': 'application/x-www-form-urlencoded'
+											},
 											method: method
 										}
 									);
@@ -177,6 +170,7 @@ class PortletInit {
 							xhr = fetch(
 								url,
 								{
+									credentials: 'same-origin',
 									method: method
 								}
 							);
@@ -184,9 +178,7 @@ class PortletInit {
 
 						xhr
 							.then(
-								res => {
-									return res.text();
-								}
+								res => res.text()
 							)
 							.then(
 								text => {
@@ -194,7 +186,7 @@ class PortletInit {
 									resolve(updatedIds);
 								}
 							)
-							.catch (
+							.catch(
 								err => {
 									reject(err);
 								}
@@ -217,8 +209,10 @@ class PortletInit {
 	_hasListener(portletId) {
 		let found = false;
 
-		for (let listener of eventListeners) {
-			if (listener.id === portletId && listener.type === 'portlet.onStateChange') {
+		const keys = Object.keys(eventListeners);
+
+		for (let key of keys) {
+			if (eventListeners[key].id === portletId) {
 				found = true;
 			}
 		}
@@ -237,12 +231,13 @@ class PortletInit {
 	 */
 
 	_reportError(portletId, err) {
-		eventListeners.map(
-			listener => {
-				if (listener.id === portletId && listener.type === 'portlet.onError') {
+		const keys = Object.keys(eventListeners);
+		keys.map(
+			key => {
+				if (key.id === portletId && key.type === 'portlet.onError') {
 					setTimeout(
 						() => {
-							listener.handler('portlet.onError', err);
+							key.handler('portlet.onError', err);
 						}
 					);
 				}
@@ -329,7 +324,7 @@ class PortletInit {
 						delete pageRenderState.portlets[portletId].state.parameters[parameterName];
 					}
 					else {
-						pageRenderState.portlets[portletId].state.parameteres[parameterName] = [...newValue];
+						pageRenderState.portlets[portletId].state.parameters[parameterName] = [...newValue];
 					}
 					updatedIds.push(portletId);
 				}
@@ -354,23 +349,7 @@ class PortletInit {
 
 		this._updateHistory();
 
-		return new Promise((resolve, reject) => {
-
-			let simulateValue = '';
-
-			if (portletId === 'SimulateCommError' && state.parameters.SimulateError !== undefined) {
-				simulateValue = state.parameters.SimulateError[0];
-			}
-
-			// Reject promise if an error is to be simulated
-
-			if (simulateValue === 'reject') {
-				reject(new Error('Simulated error occured when setting state!'));
-			}
-			else {
-				resolve(updatedIds);
-			}
-		});
+		return Promise.resolve(updatedIds);
 	}
 
 	/**
@@ -386,42 +365,41 @@ class PortletInit {
 	 */
 
 	_setupAction(parameters, element) {
-		return new Promise((resolve, reject) => {
-			if (this.isInProgress()) {
-				throw {
-					message: 'Operation is already in progress',
-					name: 'AccessDeniedException'
-				};
-			}
+		if (this.isInProgress()) {
+			throw {
+				message: 'Operation is already in progress',
+				name: 'AccessDeniedException'
+			};
+		}
 
-			if (!this._hasListener(this._portletId)) {
-				throw {
-					message: `No onStateChange listener registered for portlet: ${this._portletId}`,
-					name: 'NotInitializedException'
-				};
-			}
+		if (!this._hasListener(this._portletId)) {
+			throw {
+				message: `No onStateChange listener registered for portlet: ${this._portletId}`,
+				name: 'NotInitializedException'
+			};
+		}
 
-			busy = true;
+		busy = true;
 
-			this._executeAction(
-				parameters,
-				element
-			)
-				.then(
-					updatedIds => {
-						return this._updatePortletStates(updatedIds)
-							.then(
-								updatedIds => {
-									resolve(updatedIds);
-								}
-							);
-					},
-					err => {
-						busy = false;
-						this._reportError(this._portletId, err);
-					}
-				);
-		});
+		return this._executeAction(
+			parameters,
+			element
+		)
+			.then(
+				updatedIds => {
+					return this._updatePortletStates(updatedIds)
+						.then(
+							updatedIds => {
+								busy = false;
+								return updatedIds;
+							}
+						);
+				},
+				err => {
+					busy = false;
+					this._reportError(this._portletId, err);
+				}
+			);
 	}
 
 	/**
@@ -578,7 +556,7 @@ class PortletInit {
 					this._updatePortletStates(updatedIds);
 				}
 			)
-			.catch (
+			.catch(
 				err => {
 					busy = false;
 					this._reportError(this._portletId, err);
@@ -598,27 +576,34 @@ class PortletInit {
 	 */
 
 	_updateStateForPortlet(portletId) {
-		const updateQueueIds = eventListenerQueue.map(item => item.id);
+		const updateQueueIds = eventListenersQueue.map(item => item.handle);
 
-		for (let listener of eventListeners) {
-			if (listener.id === portletId) {
-				const dup = updateQueueIds.indexOf(listener.id) !== -1;
-				if (!dup) {
-					eventListenerQueue.push(listener);
+		const keys = Object.keys(eventListeners);
+		for (let key of keys) {
+			const eventData = eventListeners[key];
+
+			if (eventData.type !== 'portlet.onStateChange') {
+				continue;
+			}
+
+			if (eventData.id === portletId) {
+				const duplicate = updateQueueIds.indexOf(key) > -1;
+				if (!duplicate) {
+					eventListenersQueue.push(eventData);
 				}
 			}
 		}
 
-		if (eventListenerQueue.length > 0) {
+		if (eventListenersQueue.length > 0) {
 			setTimeout(
 				() => {
 					busy = true;
 
-					while (eventListenerQueue.length > 0) {
-						const portletData = eventListenerQueue.shift();
+					while (eventListenersQueue.length > 0) {
+						const eventData = eventListenersQueue.shift();
 
-						const handler = portletData.handler;
-						const id = portletData.id;
+						const handler = eventData.handler;
+						const id = eventData.id;
 
 						if (!pageRenderState.portlets[id]) {
 							continue;
@@ -656,51 +641,49 @@ class PortletInit {
 	 */
 
 	action(...args) {
-		return new Promise((resolve, reject) => {
-			let actionParameters = null;
-			let argCount = 0;
-			let el = null;
+		let actionParameters = null;
+		let argCount = 0;
+		let el = null;
 
-			for (let arg of args) {
-				if (arg instanceof HTMLFormElement) {
-					if (el !== null) {
-						throw new TypeError(`Too many [object HTMLFormElement] arguments: ${arg}, ${el}`);
-					}
-					el = arg;
+		for (let arg of args) {
+			if (arg instanceof HTMLFormElement) {
+				if (el !== null) {
+					throw new TypeError(`Too many [object HTMLFormElement] arguments: ${arg}, ${el}`);
 				}
-				else if (isObject(arg)) {
-					validateParameters(arg);
-					if (actionParameters !== null) {
-						throw new TypeError('Too many parameters arguments');
-					}
-					actionParameters = arg;
-				}
-				else if (arg !== undefined) {
-					const type = Object.prototype.toString.call(arg);
-					throw new TypeError(`Invalid argument type. Argument ${argCount + 1} is of type ${type}`);
-				}
-				argCount++;
+				el = arg;
 			}
-
-			if (el) {
-				validateForm(el);
+			else if (isObject(arg)) {
+				validateParameters(arg);
+				if (actionParameters !== null) {
+					throw new TypeError('Too many parameters arguments');
+				}
+				actionParameters = arg;
 			}
+			else if (arg !== undefined) {
+				const type = Object.prototype.toString.call(arg);
+				throw new TypeError(`Invalid argument type. Argument ${argCount + 1} is of type ${type}`);
+			}
+			argCount++;
+		}
 
-			this._setupAction(
-				actionParameters,
-				el
+		if (el) {
+			validateForm(el);
+		}
+
+		return this._setupAction(
+			actionParameters,
+			el
+		)
+			.then(
+				val => {
+					Promise.resolve(val);
+				}
 			)
-				.then(
-					val => {
-						resolve(val);
-					}
-				)
-				.catch (
-					err => {
-						reject(err);
-					}
-				);
-		});
+			.catch(
+				err => {
+					Promise.reject(err);
+				}
+			);
 	}
 
 	/**
@@ -728,28 +711,32 @@ class PortletInit {
 		}
 
 		const id = this._portletId;
-		const listener = {
-			handler,
-			id,
-			type
-		};
 
 		if (type.startsWith('portlet.')) {
 			if (type !== 'portlet.onStateChange' && type !== 'portlet.onError') {
 				throw new TypeError(`The system event type is invalid: ${type}`);
 			}
-
-			eventListeners.push(listener);
-
-			if (type === 'portlet.onStateChange') {
-				this._updateStateForPortlet(this._portletId);
-			}
-		}
-		else {
-			eventListeners.push(listener);
 		}
 
-		return listener;
+		const keys = Object.keys(eventListeners);
+		const length = keys.length + 1;
+
+		const handle = `handle-${length}-${Date.now()}`;
+
+		const listener = {
+			handle,
+			handler,
+			id,
+			type
+		};
+
+		eventListeners[handle] = listener;
+
+		if (type === 'portlet.onStateChange') {
+			this._updateStateForPortlet(this._portletId);
+		}
+
+		return handle;
 	}
 
 	/**
@@ -822,20 +809,16 @@ class PortletInit {
 	 */
 
 	dispatchClientEvent(type, payload) {
-		if (arguments.length > 2) {
-			throw new TypeError('Too many arguments passed to dispatchClientEvent');
-		}
-
-		if (!isString(type)) {
-			throw new TypeError('Event type must be a string');
-		}
+		validateArguments(arguments, 2, 2, ['string']);
 
 		if (type.match(new RegExp(portletRegex))) {
 			throw new TypeError('The event type is invalid: ' + type);
 		}
 
-		return eventListeners.reduce(
-			(amount, listener) => {
+		const keys = Object.keys(eventListeners);
+		return keys.reduce(
+			(amount, key) => {
+				const listener = eventListeners[key];
 				if (type.match(listener.type)) {
 					listener.handler(type, payload);
 					amount++;
@@ -865,7 +848,7 @@ class PortletInit {
 	 * @review
 	 */
 
-	newParameters(optParameters) {
+	newParameters(optParameters = {}) {
 		const newParameters = {};
 
 		const keys = Object.keys(optParameters);
@@ -917,14 +900,24 @@ class PortletInit {
 		}
 
 		let found = false;
-		eventListeners.forEach(
-			(listener, index) => {
-				if (listener.id === handle.id && listener.type === handle.type) {
-					eventListeners.splice(index, 1);
-					found = true;
+
+		if (isObject(eventListeners[handle])) {
+			if (eventListeners[handle].id === this._portletId) {
+				delete eventListeners[handle];
+
+				let l = eventListenersQueue.length;
+
+				for (let i = 0; i < l; i++) {
+					const eventData = eventListenersQueue[i];
+
+					if (eventData && eventData.handle === handle) {
+						eventListenersQueue.splice(i, 1);
+					}
 				}
+
+				found = true;
 			}
-		);
+		}
 
 		if (!found) {
 			throw new TypeError(
@@ -946,9 +939,7 @@ class PortletInit {
 	 */
 
 	setRenderState(state) {
-		if (!isObject(state)) {
-			throw new TypeError('State must be an object');
-		}
+		validateArguments(arguments, 1, 1, ['object']);
 
 		if (pageRenderState.portlets && pageRenderState.portlets[this._portletId]) {
 			const portletData = pageRenderState.portlets[this._portletId];
@@ -977,7 +968,10 @@ class PortletInit {
 
 		let parameters = null;
 
-		if (isDefAndNotNull(actionParameters)) {
+		if (arguments.length > 1) {
+			throw new TypeError('Too many arguments. 1 arguments are allowed');
+		}
+		else if (actionParameters !== undefined) {
 			if (isObject(actionParameters)) {
 				validateParameters(actionParameters);
 

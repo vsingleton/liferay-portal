@@ -14,7 +14,7 @@ describe(
 					() => {
 						expect.assertions(3);
 
-						return register('portletB')
+						return register('PortletB')
 							.then(
 								hub => {
 									const renderState = hub.newState(
@@ -54,7 +54,7 @@ describe(
 					() => {
 						expect.assertions(4);
 
-						return register('portletC').then(
+						return register('PortletC').then(
 							hub => {
 								const parameters1 = {
 									a: [1, 2, 3],
@@ -159,10 +159,10 @@ describe(
 									expect.arrayContaining(renderState1.parameters.c)
 								);
 
-								expect(renderState1.portletMode).toEqual(PortletConstants.VIEW);
+								expect(renderState1.portletMode).toEqual(PortletConstants.VIEW.toUpperCase());
 								expect(renderState2.portletMode).toEqual(renderState1.portletMode);
 
-								expect(renderState1.windowState).toEqual(PortletConstants.NORMAL);
+								expect(renderState1.windowState).toEqual(PortletConstants.NORMAL.toUpperCase());
 								expect(renderState2.windowState).toEqual(renderState1.windowState);
 							}
 						);

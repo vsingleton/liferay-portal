@@ -8,16 +8,11 @@ describe(
 			() => {
 				const stub = jest.fn();
 
-				return register('portletA').then(
+				return register('PortletA').then(
 					hub => {
 						const handle = hub.addEventListener('clientEvent', stub);
 
-						expect(stub.mock.calls.length).toBe(0);
-
-						hub.dispatchClientEvent('clientEvent');
-
-						expect(stub.mock.calls.length).toBe(1);
-
+						expect(handle).not.toBeUndefined();
 						hub.removeEventListener(handle);
 					}
 				);
@@ -29,13 +24,13 @@ describe(
 			() => {
 				const stub = jest.fn();
 
-				return register('portletA').then(
+				return register('PortletA').then(
 					hub => {
 
 						expect(stub.mock.calls.length).toBe(0);
 
 						const handle = hub.addEventListener('clientEvent', stub);
-						const total = hub.dispatchClientEvent('clientEvent');
+						const total = hub.dispatchClientEvent('clientEvent', {name: 'PortletA'});
 
 						expect(total).toBe(1);
 						hub.removeEventListener(handle);
@@ -47,7 +42,7 @@ describe(
 		it(
 			'should throw error if addEventListener is called with invalid args',
 			() => {
-				return register('portletA').then(
+				return register('PortletA').then(
 					hub => {
 
 						expect(
@@ -77,13 +72,13 @@ describe(
 			() => {
 				const stub = jest.fn();
 
-				return register('portletA').then(
+				return register('PortletA').then(
 					hub => {
 						const handle = hub.addEventListener('toBeRemoved', stub);
 
 						hub.removeEventListener(handle);
 
-						const total = hub.dispatchClientEvent('toBeRemoved');
+						const total = hub.dispatchClientEvent('toBeRemoved', {name: 'PortletA'});
 
 						expect(stub.mock.calls.length).toBe(0);
 						expect(total).toBe(0);
@@ -97,19 +92,19 @@ describe(
 			() => {
 				const stub = jest.fn();
 
-				return register('portletA').then(
+				return register('PortletA').then(
 					hub => {
 						expect(
 							() => {
 								hub.dispatchClientEvent(1, 2, 3);
 							}
-						).toThrow('Too many arguments passed to dispatchClientEvent');
+						).toThrowErrorMatchingSnapshot();
 
 						expect(
 							() => {
 								hub.dispatchClientEvent(1);
 							}
-						).toThrow('Event type must be a string');
+						).toThrowErrorMatchingSnapshot();
 					}
 				);
 			}
@@ -118,13 +113,13 @@ describe(
 		it(
 			'should throw error when attempting to dispatch event with protected name',
 			() => {
-				return register('portletA').then(
+				return register('PortletA').then(
 					hub => {
 						expect(
 							() => {
 								hub.dispatchClientEvent('portlet.clientEvent');
 							}
-						).toThrow('The event type is invalid: portlet.clientEvent');
+						).toThrowErrorMatchingSnapshot();
 					}
 				);
 			}
@@ -133,7 +128,7 @@ describe(
 		it(
 			'should throw error if removeEventListener is called with invalid args',
 			() => {
-				return register('portletA').then(
+				return register('PortletA').then(
 					hub => {
 						expect(
 							() => {
@@ -162,11 +157,11 @@ describe(
 			() => {
 				const stub = jest.fn();
 
-				return register('portletA').then(
+				return register('PortletA').then(
 					hub => {
 						const handle = hub.addEventListener('awesome\\w+Event$', stub);
 
-						const total = hub.dispatchClientEvent('awesomeClientEvent');
+						const total = hub.dispatchClientEvent('awesomeClientEvent', {name: 'PortletA'});
 
 						expect(stub.mock.calls.length).toBe(1);
 						expect(total).toBe(1);
@@ -386,7 +381,7 @@ describe(
 			() => {
 
 				const ids = portlet.getIds();
-				const pageState = portlet.getInitData().portlets;
+				const pageState = portlet.impl.getInitData().portlets;
 				const portletA = ids[0];
 
 				let hubA;
@@ -556,7 +551,7 @@ describe(
 			() => {
 				const eventType = 'portlet.onStateChange';
 				const ids = portlet.getIds();
-				const pageState = portlet.getInitData().portlets;
+				const pageState = portlet.impl.getInitData().portlets;
 				const portletA = ids[0];
 
 				let hubA;
@@ -950,7 +945,7 @@ describe(
 			() => {
 				const eventType = 'portlet.onStateChange';
 				const ids = portlet.getIds();
-				const pageState = portlet.getInitData().portlets;
+				const pageState = portlet.impl.getInitData().portlets;
 				const portletA = ids[0];
 				const portletB = ids[3];
 
@@ -1352,7 +1347,7 @@ describe(
 				const portletC = ids[2];
 				const portletD = ids[3];
 
-				const pageState = portlet.getInitData();
+				const pageState = portlet.impl.getInitData();
 
 				let hubA;
 				let hubB;

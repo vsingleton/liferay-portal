@@ -1,6 +1,11 @@
 import Promise from 'metal-promise';
 
 import PortletInit from './PortletInit.es';
+import {
+	getPageRenderState,
+	validateArguments,
+	validatePortletId
+} from './portlet_util.es';
 
 /**
  * Registers a portlet client with the portlet hub.
@@ -12,13 +17,17 @@ import PortletInit from './PortletInit.es';
  */
 
 const register = function(portletId) {
+	validateArguments(arguments, 1, 1, ['string']);
+
+	const pageRenderState = getPageRenderState();
+
 	return new Promise(
 		(resolve, reject) => {
-			if (!portletId) {
-				reject(new Error('Invalid portlet ID'));
+			if (validatePortletId(pageRenderState, portletId)) {
+				resolve(new PortletInit(portletId, pageRenderState));
 			}
 			else {
-				resolve(new PortletInit(portletId));
+				reject(new Error('Invalid portlet ID'));
 			}
 		}
 	);

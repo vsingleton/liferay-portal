@@ -12,7 +12,7 @@ describe(
 				const portletC = ids[2];
 				const portletD = ids[3];
 
-				const pageState = portlet.getInitData();
+				const pageState = portlet.impl.getInitData();
 
 				const listenerA = jest.fn();
 				const listenerB = jest.fn();

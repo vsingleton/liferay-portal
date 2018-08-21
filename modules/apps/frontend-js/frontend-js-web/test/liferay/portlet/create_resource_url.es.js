@@ -239,7 +239,7 @@ describe(
 							param2: ['paramValue2']
 						};
 
-						return hubB.createResourceUrl(parameters, cache).then(
+						return hubB.createResourceUrl(parameters, cache, 'myResourceId').then(
 							url => {
 								expect(portlet.resource.isResourceUrl(url)).toBeTruthy();
 							}

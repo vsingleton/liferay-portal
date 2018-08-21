@@ -10,8 +10,8 @@ class RenderState {
 		}
 		else {
 			this.parameters = {};
-			this.portletMode = PortletConstants.VIEW;
-			this.windowState = PortletConstants.NORMAL;
+			this.portletMode = PortletConstants.VIEW.toUpperCase();
+			this.windowState = PortletConstants.NORMAL.toUpperCase();
 		}
 	}
 
@@ -27,9 +27,8 @@ class RenderState {
 	}
 
 	/**
-	 * Returns an instance of RenderState based on a RenderState
+	 * Set the properties of a RenderState instance based on another RenderState
 	 * @memberof RenderState
-	 * @return {RenderState} A RenderState instance.
 	 * @review
 	 */
 
@@ -152,7 +151,7 @@ class RenderState {
 		const mode = portletMode.toLowerCase();
 
 		if (mode === PortletConstants.EDIT || mode === PortletConstants.HELP || mode === PortletConstants.VIEW) {
-			this.portletMode = mode;
+			this.portletMode = portletMode;
 		}
 	}
 
@@ -211,7 +210,7 @@ class RenderState {
 		const state = windowState.toLowerCase();
 
 		if (state === PortletConstants.MAXIMIZED || state === PortletConstants.MINIMIZED || state === PortletConstants.NORMAL) {
-			this.windowState = state;
+			this.windowState = windowState;
 		}
 	}
 }
