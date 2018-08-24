@@ -14,6 +14,7 @@
 
 package com.liferay.portlet.tck.bridge;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.ServerSocket;
@@ -42,6 +43,7 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.module.framework.ModuleServiceLifecycle;
 import com.liferay.portal.kernel.servlet.ServletContextPool;
+import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.struts.StrutsActionRegistryUtil;
@@ -121,6 +123,25 @@ public class PortletTCKBridge {
 			new HandshakeServerCallable(portletTCKBridgeConfiguration));
 
 		_handshakeServerFuture = futureTask;
+		
+		String liferayHome = PropsUtil.get("liferay.home");
+		File moduleDirFile = new File(liferayHome + "/osgi/modules/");
+		File[] files = moduleDirFile.listFiles();
+		if (files == null) {
+			System.err.println(
+					"activate: no files in moduleDirFile.getAbsolutePath() = " + moduleDirFile.getAbsolutePath());
+		} else {
+			for (File file : files) {
+				String fileName = file.getName();
+				if (fileName.contains(PortletTCKBridgeConfiguration.class.getName())) {
+					boolean deleted = file.delete();
+					if (deleted) {
+						System.out.println(
+								"activate: removed " + PortletTCKBridgeConfiguration.class.getName() + ".cfg ...");
+					}
+				}
+			}
+		}
 
 		Thread handshakeServerThread = new Thread(
 			futureTask, "Handshake server thread");
@@ -209,7 +230,7 @@ public class PortletTCKBridge {
 			}
 			else {
 				try {
-					Thread.sleep(250);
+					Thread.sleep(750);
 				}
 				catch (InterruptedException ie) {
 					if (_log.isWarnEnabled()) {
