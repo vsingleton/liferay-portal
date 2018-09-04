@@ -16,47 +16,52 @@
 
 <%@ include file="/init.jsp" %>
 
-<%
-String command = (String)SessionMessages.get(renderRequest, "command");
-String commandOutput = (String)SessionMessages.get(renderRequest, "commandOutput");
-String prompt = (String)SessionMessages.get(renderRequest, "prompt");
-%>
+<c:set var="namespace"><portlet:namespace /></c:set>
+<c:set var="errorMessage" value="${sessionErrors['gogo']}" />
+<c:set var="maxOrPopUp" value="${windowState eq 'maximized' or windowState eq 'pop_up'}" />
+
+<c:set var="command" value="${sessionMessages['command']}" />
+<c:set var="commandOutput" value="${sessionMessages['commandOutput']}" />
+<c:set var="prompt" value="${sessionMessages['prompt']}" />
 
 <portlet:actionURL name="executeCommand" var="executeCommandURL" />
 
 <div class="container-fluid-1280">
-	<aui:form action="<%= executeCommandURL %>" method="post" name="fm" onSubmit='<%= "event.preventDefault(); " + renderResponse.getNamespace() + "executeCommand();" %>'>
-		<aui:input name="redirect" type="hidden" value="<%= currentURL %>" />
+
+	<a>errorException = ${errorException}</a><br />
+
+	<aui:form action="${executeCommandURL}" method="post" name="fm" onSubmit="event.preventDefault(); ${namespace}executeCommand();">
+		<aui:input name="redirect" type="hidden" value="${currentURL}" />
 
 		<liferay-ui:error key="gogo">
-
-			<%
-			Exception e = (Exception)errorException;
-			%>
-
-			<%= HtmlUtil.escape(e.getMessage()) %>
+		
+		<% 
+			Exception e = (Exception) errorException; 
+		%>
+		<%= HtmlUtil.escape(e.getMessage()) %>
+			${fn:escapeXml(errorMessage)}
 		</liferay-ui:error>
 
 		<aui:fieldset-group markupView="lexicon">
 			<aui:fieldset>
-				<aui:input autoFocus="<%= windowState.equals(WindowState.MAXIMIZED) || windowState.equals(LiferayWindowState.POP_UP) %>" name="command" prefix="<%= prompt %>" value="<%= command %>" />
+				<aui:input autoFocus="${maxOrPopUp}" name="command" prefix="${prompt}" value="${command}" />
 			</aui:fieldset>
 		</aui:fieldset-group>
 
 		<aui:button-row>
-			<aui:button primary="<%= true %>" type="submit" value="execute" />
+			<aui:button primary="${true}" type="submit" value="execute" />
 		</aui:button-row>
 
-		<c:if test="<%= Validator.isNotNull(commandOutput) %>">
+		<c:if test="${not empty commandOutput}">
 			<b><liferay-ui:message key="output" /></b>
 
-			<pre><%= commandOutput %></pre>
+			<pre>${commandOutput}</pre>
 		</c:if>
 	</aui:form>
 </div>
 
 <aui:script>
-	function <portlet:namespace />executeCommand() {
+	function ${namespace}executeCommand() {
 		var form = document.getElementById('<portlet:namespace />fm');
 
 		if (form) {
