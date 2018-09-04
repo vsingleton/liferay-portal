@@ -14,9 +14,6 @@
 
 package com.liferay.taglib.portlet;
 
-import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
-import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
-
 import java.util.Map;
 
 import javax.portlet.ActionRequest;
@@ -30,10 +27,13 @@ import javax.portlet.RenderRequest;
 import javax.portlet.RenderResponse;
 import javax.portlet.ResourceRequest;
 import javax.portlet.ResourceResponse;
-
 import javax.servlet.jsp.tagext.TagData;
 import javax.servlet.jsp.tagext.TagExtraInfo;
 import javax.servlet.jsp.tagext.VariableInfo;
+
+import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
+import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.taglib.portlet.internal.SessionMessagesMap;
 
 /**
  * @author Brian Wing Shun Chan
@@ -67,6 +67,9 @@ public class DefineObjectsTei extends TagExtraInfo {
 				"liferayPortletResponse",
 				LiferayPortletResponse.class.getName(), true,
 				VariableInfo.AT_END),
+			new VariableInfo(
+				"sessionMessages", SessionMessagesMap.class.getName(),
+				true, VariableInfo.AT_END),
 			new VariableInfo(
 				"portletConfig", PortletConfig.class.getName(), true,
 				VariableInfo.AT_END),

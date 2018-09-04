@@ -14,9 +14,6 @@
 
 package com.liferay.taglib.portlet;
 
-import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
-import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
-
 import java.util.Locale;
 import java.util.Map;
 
@@ -45,11 +42,14 @@ import javax.portlet.ResourceRequest;
 import javax.portlet.ResourceResponse;
 import javax.portlet.StateAwareResponse;
 import javax.portlet.WindowState;
-
 import javax.servlet.http.Cookie;
 import javax.servlet.jsp.tagext.TagData;
 import javax.servlet.jsp.tagext.TagExtraInfo;
 import javax.servlet.jsp.tagext.VariableInfo;
+
+import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
+import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.taglib.portlet.internal.SessionMessagesMap;
 
 /**
  * @author Neil Griffin
@@ -101,6 +101,9 @@ public class DefineObjectsTei3 extends TagExtraInfo {
 				"liferayPortletResponse",
 				LiferayPortletResponse.class.getName(), true,
 				VariableInfo.AT_END),
+			new VariableInfo(
+				"sessionMessages", SessionMessagesMap.class.getName(),
+				true, VariableInfo.AT_END),
 			new VariableInfo(
 				"locale", Locale.class.getName(), true, VariableInfo.AT_END),
 			new VariableInfo(

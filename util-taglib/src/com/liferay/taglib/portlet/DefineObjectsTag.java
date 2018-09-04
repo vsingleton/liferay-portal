@@ -14,13 +14,8 @@
 
 package com.liferay.taglib.portlet;
 
-import com.liferay.portal.kernel.util.JavaConstants;
-import com.liferay.portal.kernel.util.PortalUtil;
-import com.liferay.portal.kernel.util.ProxyUtil;
-
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-
 import java.util.Map;
 
 import javax.portlet.PortletConfig;
@@ -28,9 +23,14 @@ import javax.portlet.PortletPreferences;
 import javax.portlet.PortletRequest;
 import javax.portlet.PortletResponse;
 import javax.portlet.PortletSession;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.jsp.tagext.TagSupport;
+
+import com.liferay.portal.kernel.util.JavaConstants;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.ProxyUtil;
+import com.liferay.taglib.portlet.internal.SessionErrorsMap;
+import com.liferay.taglib.portlet.internal.SessionMessagesMap;
 
 /**
  * @author Brian Wing Shun Chan
@@ -61,6 +61,15 @@ public class DefineObjectsTag extends TagSupport {
 			pageContext.setAttribute(
 				"liferayPortletRequest",
 				PortalUtil.getLiferayPortletRequest(portletRequest));
+			
+			pageContext.setAttribute(
+					"sessionMessages",
+					new SessionMessagesMap(portletRequest)
+			);
+			pageContext.setAttribute(
+					"sessionErrors",
+					new SessionErrorsMap(portletRequest)
+			);
 
 			String portletRequestAttrName = null;
 
