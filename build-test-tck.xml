@@ -94,7 +94,7 @@
 			<path>
 				<fileset
 					dir="${tck.deploy.files}"
-					excludes="**/tck-WarThatYouWouldLikeToExclude-*.war"
+					excludes="**/tck-V3ResourceAsyncTests-*.war"
 					includes="**/${test.context}-*.war"
 				/>
 			</path>
@@ -403,7 +403,7 @@ tckDeployFiles=${tck.deploy.files}</echo>
 
 browser.launcher.url=
 
-javascript.single.page.application.enabled=false
+# javascript.single.page.application.enabled=false
 
 module.framework.auto.deploy.interval=2000
 
