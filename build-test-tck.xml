@@ -403,8 +403,6 @@ tckDeployFiles=${tck.deploy.files}</echo>
 
 browser.launcher.url=
 
-# javascript.single.page.application.enabled=false
-
 module.framework.auto.deploy.interval=2000
 
 module.framework.web.generator.generated.wabs.store=true
@@ -420,8 +418,6 @@ users.reminder.queries.enabled=false
 web.server.https.port=8443
 
 session.timeout=240
-
-include-and-override=portal-developer.properties
 		</echo>
 
 		<print-file file.name="${liferay.home}/portal-ext.properties" />
