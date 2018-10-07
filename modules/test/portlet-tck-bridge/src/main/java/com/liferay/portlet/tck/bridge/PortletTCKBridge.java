@@ -230,7 +230,7 @@ public class PortletTCKBridge {
 			}
 			else {
 				try {
-					Thread.sleep(750);
+					Thread.sleep(1050);
 				}
 				catch (InterruptedException ie) {
 					if (_log.isWarnEnabled()) {
