@@ -358,21 +358,37 @@ tckDeployFiles=${tck.deploy.files}</echo>
 	</target>
 
 	<target name="prepare-tck">
-		<echo>prepare-tck: mvn -P all,liferay clean install</echo>
-		<maven
-			basedir="${portals.pluto.dir}"
-			goal="clean install"
-			options="-P all,liferay"
+		<echo>prepare-tck: </echo>
+
+		<var name="tck.artifactId" value="org.apache.portals.pluto" />
+		<var name="tck.version" value="20181008-3626d1b92" />
+		<var name="tck.repo" value="https://repository-cdn.liferay.com/nexus/content/groups/public/com/liferay/${tck.artifactId}" />
+		<var name="tck.parent.dir" value="20181008_184159_0400_3626d1b92_portals-pluto" />
+
+		<!-- TODO delete this mv and mkdir after antcall to prepare-portals-pluto-repository is
+			deleted from jenkins-ee commands/build-test-portal-acceptance-upstream.xml -->
+		<exec executable="/bin/bash">
+			<arg value="-c" />
+			<arg value="mv ${portals.pluto.dir} ${portals.pluto.dir}-liferay" />
+		</exec>
+
+		<exec executable="/bin/bash">
+			<arg value="-c" />
+			<arg value="mkdir -p ${tck.home}" />
+		</exec>
+
+		<mirrors-get
+			dest="${portals.pluto.dir}/${tck.artifactId}-${tck.version}.zip"
+			src="${tck.repo}/${tck.version}/${tck.artifactId}-${tck.version}.zip"
 		/>
-		<if>
-			<equals arg1="${maven.result}" arg2="0" />
-			<then>
-				<echo message="PASSED: maven.result = ${maven.result}" />
-			</then>
-			<else>
-				<echo message="FAILED: maven.result = ${maven.result} ... failed to build the tck from the pluto repo." />
-			</else>
-		</if>
+
+		<unzip dest="${portals.pluto.dir}" src="${portals.pluto.dir}/org.apache.portals.pluto-${tck.version}.zip">
+			<mapper>
+				<globmapper from="${tck.parent.dir}/*" to="${portals.pluto.dir}/*" />
+			</mapper>
+		</unzip>
+
+		<delete file="${portals.pluto.dir}/org.apache.portals.pluto-${tck.version}.zip" />
 
 		<exec executable="/bin/bash" outputproperty="deploy.count.property">
 			<arg value="-c" />
@@ -394,7 +410,52 @@ tckDeployFiles=${tck.deploy.files}</echo>
 					<arg value="-c" />
 					<arg value="ls ${tck.home}/deploy/target/deploy-files/*.war" />
 				</exec>
-				<echo>prepare-tck: deploy.files.property = ${deploy.files.property}</echo>
+				<echo>build-tck: deploy.files.property = ${deploy.files.property}</echo>
+
+				<fail message="FAILED: 53 wars were NOT built my maven against the pluto repo for running the TCK." />
+
+			</else>
+		</if>
+	</target>
+
+	<target name="build-tck">
+		<echo>build-tck: mvn -P all,liferay clean install</echo>
+		<maven
+			basedir="${portals.pluto.dir}"
+			goal="clean install"
+			options="-P all,liferay"
+		/>
+		<if>
+			<equals arg1="${maven.result}" arg2="0" />
+			<then>
+				<echo message="PASSED: maven.result = ${maven.result}" />
+			</then>
+			<else>
+				<echo message="FAILED: maven.result = ${maven.result} ... failed to build the tck from the pluto repo." />
+			</else>
+		</if>
+
+		<exec executable="/bin/bash" outputproperty="deploy.count.property">
+			<arg value="-c" />
+			<arg value="ls ${tck.home}/deploy/target/deploy-files/*.war | wc -l" />
+		</exec>
+		<echo>build-tck: deploy.count.property = ${deploy.count.property}</echo>
+
+		<if>
+			<equals arg1="${deploy.count.property}" arg2="53" />
+			<then>
+
+				<echo>build-tck: 53 wars are available for testing ...</echo>
+
+			</then>
+			<else>
+
+				<echo>build-tck: ls ${tck.home}/deploy/target/deploy-files/*.war ...</echo>
+				<exec executable="/bin/bash" outputproperty="deploy.files.property">
+					<arg value="-c" />
+					<arg value="ls ${tck.home}/deploy/target/deploy-files/*.war" />
+				</exec>
+				<echo>build-tck: deploy.files.property = ${deploy.files.property}</echo>
 
 				<fail message="FAILED: 53 wars were NOT built my maven against the pluto repo for running the TCK." />
 
