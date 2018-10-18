@@ -418,6 +418,8 @@ tckDeployFiles=${tck.deploy.files}</echo>
 
 browser.launcher.url=
 
+javascript.single.page.application.enabled=false
+
 module.framework.auto.deploy.interval=2000
 
 module.framework.web.generator.generated.wabs.store=true
