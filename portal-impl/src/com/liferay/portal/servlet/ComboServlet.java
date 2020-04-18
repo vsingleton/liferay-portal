@@ -386,6 +386,10 @@ public class ComboServlet extends HttpServlet {
 
 		Portlet portlet = PortletLocalServiceUtil.getPortletById(portletId);
 
+		if (portlet == null) {
+			return null;
+		}
+
 		if (portlet.isUndeployedPortlet()) {
 			return null;
 		}
